@@ -44,6 +44,6 @@
         <p id="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="close-dialog">Batal</button><button id="save-courier" class="primary" type="submit">Simpan kurir</button></div>
     </form></dialog>
     <dialog id="detail"><div class="dialog-heading"><h2>Detail kurir</h2><button type="button" class="close-dialog" aria-label="Tutup">✕</button></div><dl id="detail-content"></dl></dialog>
-    <dialog id="delete-dialog"><h2>Hapus kurir?</h2><p id="delete-description"></p><p class="muted">Data akan disembunyikan dari daftar. Penghapusan ini bukan penghapusan permanen.</p><p id="delete-error" role="alert"></p><div class="dialog-actions"><button type="button" class="close-dialog">Batal</button><button type="button" id="confirm-delete" class="danger">Hapus kurir</button></div></dialog>
+    <dialog id="delete-dialog"><h2>Hapus kurir?</h2><p id="delete-description"></p><label for="delete-mode">Jenis penghapusan</label><select id="delete-mode"><option value="soft">Soft delete — sembunyikan data</option><option value="force">Force delete — hapus permanen</option></select><p id="delete-explanation" class="muted">Data disembunyikan dari daftar dan tetap tersimpan di database.</p><p id="delete-error" role="alert"></p><div class="dialog-actions"><button type="button" class="close-dialog">Batal</button><button type="button" id="confirm-delete" class="danger">Hapus kurir</button></div></dialog>
 </body>
 </html>

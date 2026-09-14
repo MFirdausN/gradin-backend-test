@@ -119,17 +119,29 @@ if (rows) {
         deleteId = courier.id;
         $('#delete-description').textContent = `Hapus ${courier.name} dari daftar kurir?`;
         $('#delete-error').textContent = '';
+        $('#delete-mode').value = 'soft';
+        updateDeleteMode();
         $('#delete-dialog').showModal();
     }
+    function updateDeleteMode() {
+        const permanent = $('#delete-mode').value === 'force';
+        $('#delete-explanation').textContent = permanent
+            ? 'Data dihapus permanen dari database dan tidak dapat dipulihkan.'
+            : 'Data disembunyikan dari daftar dan tetap tersimpan di database.';
+        $('#confirm-delete').textContent = permanent ? 'Hapus permanen' : 'Soft delete';
+    }
+    $('#delete-mode').addEventListener('change', updateDeleteMode);
     $('#confirm-delete').addEventListener('click', async () => {
         $('#confirm-delete').disabled = true;
+        $('#delete-mode').disabled = true;
+        const permanent = $('#delete-mode').value === 'force';
         try {
-            await api(`/${deleteId}`, { method: 'DELETE' });
+            await api(`/${deleteId}${permanent ? '/force' : ''}`, { method: 'DELETE' });
             $('#delete-dialog').close();
-            notice('Kurir berhasil dihapus dari daftar.');
+            notice(permanent ? 'Kurir berhasil dihapus permanen.' : 'Kurir berhasil dihapus dari daftar.');
             await load();
         } catch (error) { $('#delete-error').textContent = error.message; }
-        finally { $('#confirm-delete').disabled = false; }
+        finally { $('#confirm-delete').disabled = false; $('#delete-mode').disabled = false; }
     });
     form.addEventListener('submit', async (event) => {
         event.preventDefault();

@@ -40,6 +40,7 @@ Gunakan header `Accept: application/json` dan `Content-Type: application/json` u
 | GET | `/api/couriers/{id}` | 200; seluruh atribut dalam `data` |
 | PUT/PATCH | `/api/couriers/{id}` | 200; `data` terbaru |
 | DELETE | `/api/couriers/{id}` | 204; tanpa body, soft delete |
+| DELETE | `/api/couriers/{id}/force` | 204; tanpa body, hapus permanen |
 
 Tidak ditemukan: 404. Validasi gagal: 422 dengan `message` dan `errors`. Kedua metode update mendukung field parsial; field yang tidak dikirim tetap dipertahankan.
 
@@ -68,6 +69,9 @@ curl -X PATCH 'http://localhost:8000/api/couriers/1' \
   -d '{"level":4}'
 
 curl -X DELETE -H 'Accept: application/json' 'http://localhost:8000/api/couriers/1'
+
+# Hapus permanen, termasuk data yang sebelumnya sudah soft delete
+curl -X DELETE -H 'Accept: application/json' 'http://localhost:8000/api/couriers/1/force'
 ```
 
 ### Data dan validasi
@@ -82,11 +86,11 @@ curl -X DELETE -H 'Accept: application/json' 'http://localhost:8000/api/couriers
 
 Update mengabaikan record sendiri pada pemeriksaan kontak unik. Controller hanya menyimpan field yang lolos validasi. Migration tambahan memperluas tabel scaffold yang sebelumnya hanya mempunyai ID dan timestamps; tidak mengubah migration yang sudah pernah dijalankan. Kolom name, level, dan created_at memiliki index. Pencarian substring tidak dijamin memakai index nama.
 
-### Keputusan soft delete
+### Soft delete dan force delete
 
 Brief asli meminta data hilang dari database. Berdasarkan tambahan kebutuhan pengguna, DELETE **mengisi `deleted_at`**, bukan menghapus baris secara fisik. Data tersebut hilang dari daftar API; show, update, dan delete ulang menghasilkan 404. Test menggunakan `assertSoftDeleted`, pemeriksaan record tetap ada, dan pemeriksaan akses API sudah hilang.
 
-Phone/email tetap dicadangkan termasuk setelah soft delete untuk mencegah konflik saat pemulihan nanti. Endpoint restore dan force delete belum termasuk cakupan awal; tercantum dalam roadmap. API ini untuk demonstrasi tes, belum menggunakan autentikasi. Tambahkan autentikasi dan otorisasi sebelum digunakan secara operasional.
+Phone/email tetap dicadangkan setelah soft delete untuk mencegah konflik saat pemulihan nanti. `DELETE /api/couriers/{id}/force` menghapus baris secara permanen, baik kurir aktif maupun yang sudah soft delete. Setelah force delete, kontak dapat digunakan kembali; akses dan penghapusan ulang menghasilkan 404. Test memakai `assertDatabaseMissing` untuk membuktikan penghapusan fisik sesuai brief awal. Endpoint restore belum tersedia. API ini untuk demonstrasi tes, belum menggunakan autentikasi. Tambahkan autentikasi dan otorisasi sebelum digunakan secara operasional.
 
 ## Pengujian
 
@@ -96,7 +100,7 @@ vendor/bin/pint --dirty --format agent
 npm run build
 ```
 
-PHPUnit menggunakan SQLite `:memory:` dan `RefreshDatabase`, terpisah dari database development. Feature tests mencakup CRUD, seluruh nilai enum, payload/query tidak valid, kontak unik, partial update, mass assignment, pagination, sorting, search multi-kata dan wildcard literal, kombinasi filter, soft delete, serta JSON 404. Test dashboard tidak membutuhkan manifest Vite. Test browser interaktif tidak termasuk suite PHP.
+PHPUnit menggunakan SQLite `:memory:` dan `RefreshDatabase`, terpisah dari database development. Feature tests mencakup CRUD, seluruh nilai enum, payload/query tidak valid, kontak unik, partial update, mass assignment, pagination, sorting, search multi-kata dan wildcard literal, kombinasi filter, soft delete, force delete pada data aktif/terhapus, penggunaan ulang kontak setelah force delete, serta JSON 404. Test dashboard tidak membutuhkan manifest Vite. Test browser interaktif tidak termasuk suite PHP.
 
 ## Struktur utama
 
@@ -109,7 +113,7 @@ PHPUnit menggunakan SQLite `:memory:` dan `RefreshDatabase`, terpisah dari datab
 - `tests/Feature/CourierTest.php`: pengujian perilaku API dan persistensi.
 - `resources/views/welcome.blade.php`, `resources/js/app.js`, `resources/css/app.css`: dashboard yang memanggil API, tanpa framework JS tambahan.
 
-Controller dan Eloquent cukup untuk satu modul ini; belum ada kebutuhan service/repository layer. Dashboard mencakup search debounce, multi-level filter, sorting, pagination, tambah/edit, detail, konfirmasi soft delete, error field, loading, dan empty state. Seluruh data API ditampilkan menggunakan `textContent` untuk menghindari penyisipan HTML.
+Controller dan Eloquent cukup untuk satu modul ini; belum ada kebutuhan service/repository layer. Dashboard mencakup search debounce, multi-level filter, sorting, pagination, tambah/edit, detail, pilihan soft delete atau force delete pada dialog konfirmasi (default soft delete), error field, loading, dan empty state. Seluruh data API ditampilkan menggunakan `textContent` untuk menghindari penyisipan HTML.
 
 ## Tahapan dan pengembangan berikutnya
 
@@ -124,7 +128,7 @@ Controller dan Eloquent cukup untuk satu modul ini; belum ada kebutuhan service/
 Roadmap setelah tes, berdasarkan kebutuhan nyata:
 
 - Autentikasi dan policy akses sebelum pemakaian operasional.
-- Tampilan arsip, restore, serta force delete dengan otorisasi dan pengujian tersendiri.
+- Tampilan arsip dan restore; otorisasi khusus penghapusan permanen.
 - Audit perubahan untuk melacak pelaku dan waktu perubahan data.
 - CI untuk test/formatter/build serta spesifikasi OpenAPI.
 - Normalisasi telepon, Unicode search, dan evaluasi index berdasarkan volume data.

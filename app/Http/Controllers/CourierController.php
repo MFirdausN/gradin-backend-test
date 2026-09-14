@@ -57,4 +57,11 @@ class CourierController extends Controller
 
         return response()->noContent();
     }
+
+    public function forceDestroy(Courier $courier): Response
+    {
+        $courier->forceDelete();
+
+        return response()->noContent();
+    }
 }

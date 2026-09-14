@@ -134,10 +134,37 @@ class CourierTest extends TestCase
         $this->postJson('/api/couriers', $this->payload())->assertUnprocessable()->assertJsonValidationErrors(['phone', 'email']);
     }
 
+    #[DataProvider('deletionStates')]
+    public function test_force_delete_removes_active_or_trashed_couriers_and_releases_contacts(bool $trashed): void
+    {
+        $courier = Courier::factory()->create($this->payload());
+        $other = Courier::factory()->create();
+
+        if ($trashed) {
+            $this->deleteJson('/api/couriers/'.$courier->id)->assertNoContent();
+            $this->assertSoftDeleted($courier);
+        }
+
+        $this->deleteJson('/api/couriers/'.$courier->id.'/force')->assertNoContent();
+        $this->assertDatabaseMissing('couriers', ['id' => $courier->id]);
+        $this->assertDatabaseHas('couriers', ['id' => $other->id]);
+        $this->getJson('/api/couriers')->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $other->id);
+        $this->getJson('/api/couriers/'.$courier->id)->assertNotFound();
+        $this->patchJson('/api/couriers/'.$courier->id, ['name' => 'Changed'])->assertNotFound();
+        $this->deleteJson('/api/couriers/'.$courier->id.'/force')->assertNotFound();
+        $this->postJson('/api/couriers', $this->payload())->assertCreated();
+    }
+
+    public static function deletionStates(): array
+    {
+        return ['active' => [false], 'soft deleted' => [true]];
+    }
+
     public function test_missing_resources_return_json_not_found(): void
     {
         $this->get('/api/couriers/999')->assertNotFound()->assertHeader('Content-Type', 'application/json');
         $this->putJson('/api/couriers/999', $this->payload())->assertNotFound();
         $this->deleteJson('/api/couriers/999')->assertNotFound();
+        $this->deleteJson('/api/couriers/999/force')->assertNotFound();
     }
 }
