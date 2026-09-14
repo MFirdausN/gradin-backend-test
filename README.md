@@ -14,6 +14,7 @@ Project ini menyediakan API berbasis Laravel sebagai bagian utama tes, dilengkap
 | Pengurutan | Mengurutkan nama atau tanggal pendaftaran. |
 | Tambah dan edit | Menyimpan data baru atau memperbarui informasi kurir. |
 | Detail kurir | Melihat informasi lengkap, termasuk waktu pendaftaran dan perubahan data. |
+| Arsip dan pemulihan | Menampilkan data terhapus dan mengembalikannya ke daftar. |
 | Penghapusan | Memilih antara menyembunyikan data atau menghapusnya secara permanen. |
 
 Sebagai contoh, pencarian **“budi agung”** dapat menemukan **“Budiono Hadi Agung”**. Nama tidak harus ditulis lengkap, tetapi semua kata yang dicari harus ada pada nama kurir.
@@ -26,6 +27,7 @@ Setelah aplikasi dijalankan, buka alamat yang muncul di terminal. Secara default
 2. Gunakan kotak pencarian, pilihan level, dan pengurutan untuk menemukan data. Klik **Reset filter** untuk kembali ke tampilan awal.
 3. Klik **Detail** untuk melihat informasi lengkap atau **Edit** untuk memperbaruinya.
 4. Klik **Hapus**, pilih jenis penghapusan, lalu konfirmasi pilihan tersebut.
+5. Pilih **Data terhapus** pada filter status penghapusan untuk membuka arsip. Klik **Pulihkan** untuk mengembalikan kurir atau **Hapus permanen** untuk menghapusnya dari database. Pilihan **Semua data** menampilkan data yang belum dihapus beserta arsipnya.
 
 Jika isian belum sesuai, aplikasi menampilkan pesan pada form agar pengguna tahu bagian yang perlu diperbaiki. Form tambah, edit, detail, dan hapus ditampilkan dalam jendela di tengah layar, dengan susunan yang menyesuaikan ukuran perangkat.
 
@@ -46,12 +48,12 @@ Status **nonaktif** berbeda dengan data yang dihapus. Kurir nonaktif masih tampi
 
 | Pilihan | Apa yang terjadi? | Bisa dipulihkan? |
 | --- | --- | --- |
-| **Soft delete** — pilihan awal | Data hilang dari daftar, tetapi tetap tersimpan di database dengan penanda waktu penghapusan. | Data masih ada, tetapi fitur pemulihan belum tersedia di aplikasi. |
+| **Soft delete** — pilihan awal | Data hilang dari daftar, tetapi tetap tersimpan di database dengan penanda waktu penghapusan. | Ya, melalui tombol **Pulihkan** pada daftar data terhapus. |
 | **Force delete** | Data dihapus secara permanen dari database. | Tidak dapat dipulihkan melalui aplikasi. |
 
 Setelah soft delete, nomor telepon dan email masih dicadangkan untuk kurir tersebut. Setelah force delete, keduanya dapat digunakan kembali pada data baru.
 
-Dashboard menyediakan kedua pilihan untuk kurir yang masih tampil di daftar. Penghapusan permanen terhadap data yang sebelumnya sudah soft delete dapat dilakukan melalui API; halaman arsip belum tersedia.
+Dashboard menyediakan kedua pilihan untuk kurir yang belum dihapus. Pada daftar data terhapus, penghapusan hanya tersedia dalam bentuk permanen dan tetap memerlukan konfirmasi. Pemulihan mempertahankan informasi kurir, termasuk status aktif/nonaktif sebelumnya.
 
 ## Instalasi dan menjalankan aplikasi
 
@@ -126,6 +128,7 @@ Ganti `{id}` dengan ID kurir yang ingin diakses.
 | GET | `/api/couriers/{id}` | Mengambil detail kurir | 200 |
 | PUT / PATCH | `/api/couriers/{id}` | Memperbarui data kurir | 200 |
 | DELETE | `/api/couriers/{id}` | Melakukan soft delete | 204 |
+| PATCH | `/api/couriers/{id}/restore` | Memulihkan kurir yang sudah soft delete | 200 |
 | DELETE | `/api/couriers/{id}/force` | Menghapus permanen, termasuk data yang sudah soft delete | 204 |
 
 Respons daftar berisi `data`, `links`, dan `meta` untuk mendukung perpindahan halaman. Respons tambah, detail, dan edit membungkus informasi kurir dalam `data`. Penghapusan yang berhasil tidak mengembalikan body.
@@ -136,6 +139,7 @@ Kedua metode update mendukung perubahan sebagian field: informasi yang tidak dik
 
 | Parameter | Nilai awal | Nilai yang diterima |
 | --- | --- | --- |
+| `trashed` | `without` | `without`: belum dihapus; `only`: hanya terhapus; `with`: semua data |
 | `search` | Tidak ada pencarian | Teks maksimal 255 karakter |
 | `level` | Semua level | Angka 1–5, dipisahkan koma, misalnya `2,3`; array query juga diterima |
 | `sort` | `name` | `name` atau `created_at` |
@@ -195,6 +199,22 @@ curl -X DELETE -H 'Accept: application/json' \
   'http://localhost:8000/api/couriers/1/force'
 ```
 
+**Menampilkan data terhapus:**
+
+```sh
+curl -H 'Accept: application/json' \
+  'http://localhost:8000/api/couriers?trashed=only'
+```
+
+**Memulihkan kurir:**
+
+```sh
+curl -X PATCH -H 'Accept: application/json' \
+  'http://localhost:8000/api/couriers/1/restore'
+```
+
+Pemulihan berhasil menghasilkan status **200** dan data kurir dengan `deleted_at: null`. Memulihkan kurir yang belum dihapus menghasilkan **409**; ID yang tidak ada atau sudah dihapus permanen menghasilkan **404**. Filter arsip dapat digabungkan dengan pencarian, level, pengurutan, dan pagination.
+
 ### Catatan implementasi
 
 - Field yang dapat dikirim adalah `name`, `phone`, `email`, `level`, dan `is_active`. `email` boleh bernilai `null`; `is_active` menggunakan boolean.
@@ -215,7 +235,7 @@ Jalankan seluruh pengujian:
 php artisan test --compact
 ```
 
-Cakupannya meliputi penambahan, detail, perubahan, validasi isian, pencarian, filter, pengurutan, pembagian halaman, serta kedua jenis penghapusan. Pengujian juga memastikan kontak dapat dipakai kembali setelah force delete dan data kurir lain tidak ikut terhapus.
+Cakupannya meliputi penambahan, detail, perubahan, validasi isian, pencarian, filter, pengurutan, pembagian halaman, kedua jenis penghapusan, filter arsip, serta pemulihan data. Pengujian juga memastikan kontak dapat dipakai kembali setelah force delete dan data kurir lain tidak ikut terhapus.
 
 Pengujian PHP memakai database SQLite sementara di memori, terpisah dari database lokal aplikasi. Pemeriksaan tampilan interaktif di browser tidak termasuk dalam suite PHP.
 
@@ -248,7 +268,7 @@ Versi ini berfokus pada satu modul pengelolaan kurir untuk kebutuhan tes. Aplika
 Pengembangan berikutnya dapat dilakukan bertahap:
 
 1. **Login dan hak akses:** menentukan siapa yang boleh melihat, mengubah, dan menghapus data secara permanen.
-2. **Arsip dan pemulihan:** menampilkan data yang sudah soft delete dan menyediakan tombol untuk mengembalikannya.
+2. **Pengelolaan arsip lanjutan:** menambahkan aturan masa penyimpanan arsip sesuai kebutuhan operasional.
 3. **Riwayat perubahan:** mencatat siapa yang melakukan perubahan dan kapan perubahan terjadi.
 4. **Peningkatan kualitas data:** menyamakan format nomor telepon dan memperluas dukungan pencarian nama.
 5. **Pemeliharaan dan integrasi:** menjalankan pengujian otomatis saat kode diperbarui dan menyediakan spesifikasi API dengan OpenAPI.

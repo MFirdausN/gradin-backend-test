@@ -160,6 +160,41 @@ class CourierTest extends TestCase
         return ['active' => [false], 'soft deleted' => [true]];
     }
 
+    public function test_deleted_filter_combines_with_search_levels_and_pagination(): void
+    {
+        Courier::factory()->create(['name' => 'Budi Agung', 'level' => 2]);
+        $deleted = Courier::factory()->create(['name' => 'Budiono Hadi Agung', 'level' => 2]);
+        $deleted->delete();
+        Courier::factory()->create(['name' => 'Budi Agung', 'level' => 3])->delete();
+        Courier::factory()->create(['name' => 'Budi Santoso', 'level' => 2])->delete();
+
+        $this->getJson('/api/couriers')->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/couriers?trashed=with')->assertJsonPath('meta.total', 4);
+        $response = $this->getJson('/api/couriers?trashed=only&search=budi+agung&level=2,3&per_page=1&sort=name&direction=desc');
+        $response->assertOk()->assertJsonPath('meta.total', 2)->assertJsonPath('data.0.id', $deleted->id);
+        $this->assertNotNull($response->json('data.0.deleted_at'));
+        parse_str(parse_url($response->json('links.next'), PHP_URL_QUERY), $query);
+        $this->assertSame('only', $query['trashed']);
+        $this->getJson('/api/couriers?trashed=invalid')->assertUnprocessable()->assertJsonValidationErrors('trashed');
+    }
+
+    public function test_restore_returns_deleted_courier_to_default_list_and_preserves_attributes(): void
+    {
+        $courier = Courier::factory()->create(['is_active' => false]);
+        $courier->delete();
+        $this->patchJson('/api/couriers/'.$courier->id.'/restore')->assertOk()
+            ->assertJsonPath('data.id', $courier->id)->assertJsonPath('data.deleted_at', null)
+            ->assertJsonPath('data.is_active', false);
+        $this->assertDatabaseHas('couriers', ['id' => $courier->id, 'deleted_at' => null, 'phone' => $courier->phone]);
+        $this->getJson('/api/couriers')->assertJsonPath('data.0.id', $courier->id);
+        $this->getJson('/api/couriers?trashed=only')->assertJsonCount(0, 'data');
+        $this->getJson('/api/couriers/'.$courier->id)->assertOk();
+        $this->patchJson('/api/couriers/'.$courier->id.'/restore')->assertConflict();
+        $this->deleteJson('/api/couriers/'.$courier->id.'/force')->assertNoContent();
+        $this->patchJson('/api/couriers/'.$courier->id.'/restore')->assertNotFound();
+        $this->patchJson('/api/couriers/999999/restore')->assertNotFound();
+    }
+
     public function test_missing_resources_return_json_not_found(): void
     {
         $this->get('/api/couriers/999')->assertNotFound()->assertHeader('Content-Type', 'application/json');

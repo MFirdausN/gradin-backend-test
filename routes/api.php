@@ -7,4 +7,8 @@ Route::delete('couriers/{courier}/force', [CourierController::class, 'forceDestr
     ->withTrashed()
     ->name('couriers.force-destroy');
 
+Route::patch('couriers/{courier}/restore', [CourierController::class, 'restore'])
+    ->withTrashed()
+    ->name('couriers.restore');
+
 Route::apiResource('couriers', CourierController::class);

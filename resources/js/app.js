@@ -6,6 +6,7 @@ if (rows) {
     let page = 1;
     let currentId = null;
     let deleteId = null;
+    let deleteIsTrashed = false;
     let controller;
     let timer;
     const date = (value) => value ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -37,7 +38,7 @@ if (rows) {
         controller?.abort();
         controller = new AbortController();
         const [sort, direction] = $('#sort').value.split(':');
-        const params = new URLSearchParams({ page, per_page: $('#per-page').value, sort, direction });
+        const params = new URLSearchParams({ page, per_page: $('#per-page').value, sort, direction, trashed: $('#trashed').value });
         const search = $('#search').value.trim();
         if (search) params.set('search', search);
         const levels = [...document.querySelectorAll('[name=level]:checked')].map(input => input.value);
@@ -61,10 +62,14 @@ if (rows) {
                 const level = document.createElement('td');
                 level.append(text('span', `Level ${courier.level}`, 'level-badge'));
                 const status = document.createElement('td');
-                status.append(text('span', courier.is_active ? '● Aktif' : 'Nonaktif', courier.is_active ? 'active-badge' : 'inactive-badge'));
+                status.append(text('span', courier.deleted_at ? 'Terhapus' : courier.is_active ? '● Aktif' : 'Nonaktif', !courier.deleted_at && courier.is_active ? 'active-badge' : 'inactive-badge'));
+                if (courier.deleted_at) status.append(text('small', date(courier.deleted_at)));
                 const actions = document.createElement('td');
                 const buttons = text('div', '', 'row-actions');
-                for (const [label, action] of [['Detail', () => showDetail(courier.id)], ['Edit', () => edit(courier.id)], ['Hapus', () => confirmDelete(courier)]]) {
+                const rowActions = courier.deleted_at
+                    ? [['Pulihkan', (event) => restore(courier, event.currentTarget)], ['Hapus permanen', () => confirmDelete(courier)]]
+                    : [['Detail', () => showDetail(courier.id)], ['Edit', () => edit(courier.id)], ['Hapus', () => confirmDelete(courier)]];
+                for (const [label, action] of rowActions) {
                     const button = text('button', label);
                     button.type = 'button';
                     button.setAttribute('aria-label', `${label} ${courier.name}`);
@@ -115,11 +120,22 @@ if (rows) {
             $('#detail').showModal();
         } catch (error) { notice(error.message); }
     }
+    async function restore(courier, button) {
+        button.disabled = true;
+        try {
+            await api(`/${courier.id}/restore`, { method: 'PATCH' });
+            notice(`${courier.name} berhasil dipulihkan.`);
+            await load();
+        } catch (error) { notice(error.message); }
+        finally { button.disabled = false; }
+    }
     function confirmDelete(courier) {
         deleteId = courier.id;
         $('#delete-description').textContent = `Hapus ${courier.name} dari daftar kurir?`;
         $('#delete-error').textContent = '';
-        $('#delete-mode').value = 'soft';
+        deleteIsTrashed = Boolean(courier.deleted_at);
+        $('#delete-mode').value = deleteIsTrashed ? 'force' : 'soft';
+        $('#delete-mode').disabled = deleteIsTrashed;
         updateDeleteMode();
         $('#delete-dialog').showModal();
     }
@@ -141,7 +157,7 @@ if (rows) {
             notice(permanent ? 'Kurir berhasil dihapus permanen.' : 'Kurir berhasil dihapus dari daftar.');
             await load();
         } catch (error) { $('#delete-error').textContent = error.message; }
-        finally { $('#confirm-delete').disabled = false; $('#delete-mode').disabled = false; }
+        finally { $('#confirm-delete').disabled = false; $('#delete-mode').disabled = deleteIsTrashed; }
     });
     form.addEventListener('submit', async (event) => {
         event.preventDefault();

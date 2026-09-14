@@ -26,6 +26,7 @@ class IndexCourierRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:255'],
             'level' => ['sometimes', 'array', 'min:1', 'max:5'],
             'level.*' => ['required', 'integer', Rule::enum(CourierLevel::class)],
+            'trashed' => ['sometimes', Rule::in(['without', 'only', 'with'])],
             'sort' => ['sometimes', Rule::in(['name', 'created_at'])],
             'direction' => ['sometimes', Rule::in(['asc', 'desc'])],
             'page' => ['sometimes', 'integer', 'min:1'],

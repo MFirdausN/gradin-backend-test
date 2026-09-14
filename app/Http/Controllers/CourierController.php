@@ -17,6 +17,12 @@ class CourierController extends Controller
         $filters = $request->validated();
         $query = Courier::query();
 
+        if (($filters['trashed'] ?? 'without') === 'only') {
+            $query->onlyTrashed();
+        } elseif (($filters['trashed'] ?? 'without') === 'with') {
+            $query->withTrashed();
+        }
+
         foreach (preg_split('/\s+/u', trim($filters['search'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) as $term) {
             $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
             $query->whereRaw("LOWER(name) LIKE ? ESCAPE '!'", [$pattern]);
@@ -56,6 +62,14 @@ class CourierController extends Controller
         $courier->delete();
 
         return response()->noContent();
+    }
+
+    public function restore(Courier $courier): CourierResource
+    {
+        abort_unless($courier->trashed(), 409, 'Kurir ini tidak sedang dihapus.');
+        $courier->restore();
+
+        return new CourierResource($courier->refresh());
     }
 
     public function forceDestroy(Courier $courier): Response

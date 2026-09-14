@@ -22,6 +22,7 @@
                 <div class="panel-title"><h2 id="list-title">Daftar kurir</h2><span class="tag">MASTER DATA</span></div>
                 <form id="filters" class="filters">
                     <label class="search-label"><span class="sr-only">Cari nama kurir</span><input id="search" name="search" type="search" placeholder="Cari nama kurir…" maxlength="255"></label>
+                    <label><span class="sr-only">Status penghapusan</span><select id="trashed"><option value="without">Data belum dihapus</option><option value="only">Data terhapus</option><option value="with">Semua data</option></select></label>
                     <label class="sort-label"><span class="sr-only">Urutkan kurir</span><select id="sort"><option value="name:asc">Nama A–Z</option><option value="name:desc">Nama Z–A</option><option value="created_at:desc">Pendaftaran terbaru</option><option value="created_at:asc">Pendaftaran terlama</option></select></label>
                     <label><span class="sr-only">Data per halaman</span><select id="per-page"><option value="15">15 / halaman</option><option value="30">30 / halaman</option><option value="100">100 / halaman</option></select></label>
                     <fieldset class="levels"><legend>Level</legend>@foreach (\App\Enums\CourierLevel::cases() as $level)<label><input type="checkbox" name="level" value="{{ $level->value }}"><span>{{ $level->value }}</span></label>@endforeach</fieldset>
