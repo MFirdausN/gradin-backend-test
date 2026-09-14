@@ -34,16 +34,73 @@
             <footer class="page-footer">Gradin · Courier workspace <span>Laravel API + dashboard</span></footer>
         </section>
     </main>
-    <dialog id="editor"><form id="courier-form"><div class="dialog-heading"><div><p class="eyebrow">DATA KURIR</p><h2 id="editor-title">Tambah kurir</h2></div><button type="button" class="close-dialog" aria-label="Tutup">✕</button></div>
-        <p class="muted">Lengkapi informasi kurir. Kolom bertanda * wajib diisi.</p>
-        <label>Nama lengkap *<input name="name" required maxlength="255" autocomplete="name"><small data-error="name"></small></label>
-        <label>Nomor telepon *<input name="phone" required maxlength="16" placeholder="081234567890" autocomplete="tel" type="tel"><small data-error="phone"></small></label>
-        <label>Email <span class="muted">(opsional)</span><input name="email" type="email" maxlength="255" autocomplete="email"><small data-error="email"></small></label>
-        <label>Level *<select name="level">@foreach (\App\Enums\CourierLevel::cases() as $level)<option value="{{ $level->value }}">Level {{ $level->value }}</option>@endforeach</select><small data-error="level"></small></label>
-        <label class="checkbox-label"><input name="is_active" type="checkbox" checked> Kurir aktif<small data-error="is_active"></small></label>
-        <p id="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="close-dialog">Batal</button><button id="save-courier" class="primary" type="submit">Simpan kurir</button></div>
-    </form></dialog>
-    <dialog id="detail"><div class="dialog-heading"><h2>Detail kurir</h2><button type="button" class="close-dialog" aria-label="Tutup">✕</button></div><dl id="detail-content"></dl></dialog>
-    <dialog id="delete-dialog"><h2>Hapus kurir?</h2><p id="delete-description"></p><label for="delete-mode">Jenis penghapusan</label><select id="delete-mode"><option value="soft">Soft delete — sembunyikan data</option><option value="force">Force delete — hapus permanen</option></select><p id="delete-explanation" class="muted">Data disembunyikan dari daftar dan tetap tersimpan di database.</p><p id="delete-error" role="alert"></p><div class="dialog-actions"><button type="button" class="close-dialog">Batal</button><button type="button" id="confirm-delete" class="danger">Hapus kurir</button></div></dialog>
+    <dialog id="editor" aria-labelledby="editor-title" aria-describedby="editor-description">
+        <form id="courier-form">
+            <div class="dialog-heading">
+                <div><p class="eyebrow">DATA KURIR</p><h2 id="editor-title">Tambah kurir</h2></div>
+                <button type="button" class="close-dialog" aria-label="Tutup form kurir">✕</button>
+            </div>
+            <p id="editor-description" class="dialog-description">Lengkapi informasi kurir. Kolom bertanda * wajib diisi.</p>
+            <div class="form-grid">
+                <label class="form-field field-wide">Nama lengkap *
+                    <input name="name" required maxlength="255" autocomplete="name" placeholder="Contoh: Andi Pratama" aria-describedby="name-error">
+                    <small id="name-error" data-error="name"></small>
+                </label>
+                <label class="form-field">Nomor telepon *
+                    <input name="phone" required maxlength="16" placeholder="081234567890" autocomplete="tel" type="tel" aria-describedby="phone-error">
+                    <small id="phone-error" data-error="phone"></small>
+                </label>
+                <label class="form-field">Level *
+                    <select name="level" aria-describedby="level-error">
+                        @foreach (\App\Enums\CourierLevel::cases() as $level)
+                            <option value="{{ $level->value }}">Level {{ $level->value }}</option>
+                        @endforeach
+                    </select>
+                    <small id="level-error" data-error="level"></small>
+                </label>
+                <label class="form-field field-wide"><span>Email <span class="muted">(opsional)</span></span>
+                    <input name="email" type="email" maxlength="255" autocomplete="email" placeholder="nama@contoh.com" aria-describedby="email-error">
+                    <small id="email-error" data-error="email"></small>
+                </label>
+                <label class="status-field field-wide">
+                    <input name="is_active" type="checkbox" checked aria-describedby="active-error">
+                    <span><strong>Kurir aktif</strong><small>Tandai jika kurir masih aktif bertugas.</small></span>
+                </label>
+                <small id="active-error" class="field-wide" data-error="is_active"></small>
+            </div>
+            <p id="form-error" role="alert"></p>
+            <div class="dialog-actions">
+                <button type="button" class="close-dialog">Batal</button>
+                <button id="save-courier" class="primary" type="submit">Simpan kurir</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="detail" aria-labelledby="detail-title">
+        <div class="dialog-heading">
+            <div><p class="eyebrow">PROFIL KURIR</p><h2 id="detail-title">Detail kurir</h2></div>
+            <button type="button" class="close-dialog" aria-label="Tutup detail kurir">✕</button>
+        </div>
+        <dl id="detail-content"></dl>
+        <div class="dialog-actions"><button type="button" class="close-dialog">Tutup</button></div>
+    </dialog>
+    <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description delete-explanation">
+        <div class="dialog-heading">
+            <div><p class="eyebrow">PENGHAPUSAN DATA</p><h2 id="delete-title">Hapus kurir?</h2></div>
+            <button type="button" class="close-dialog" aria-label="Tutup konfirmasi hapus">✕</button>
+        </div>
+        <p id="delete-description" class="dialog-description"></p>
+        <label class="form-field" for="delete-mode">Jenis penghapusan
+            <select id="delete-mode">
+                <option value="soft">Soft delete — sembunyikan data</option>
+                <option value="force">Force delete — hapus permanen</option>
+            </select>
+        </label>
+        <p id="delete-explanation" class="delete-explanation">Data disembunyikan dari daftar dan tetap tersimpan di database.</p>
+        <p id="delete-error" role="alert"></p>
+        <div class="dialog-actions">
+            <button type="button" class="close-dialog">Batal</button>
+            <button type="button" id="confirm-delete" class="danger">Hapus kurir</button>
+        </div>
+    </dialog>
 </body>
 </html>

@@ -416,74 +416,189 @@ td small {
     font-size:13px;
 }
 dialog {
-    border:1px solid #dde6df;
-    border-radius:16px;
-    padding:28px;
-    width:min(480px,calc(100% - 32px));
-    max-height:90vh;
-    overflow:auto;
-    color:#203b30;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    border: 1px solid #dde6df;
+    border-radius: 20px;
+    padding: 28px;
+    width: min(520px, calc(100% - 32px));
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: #fff;
+    color: #203b30;
+    box-shadow: 0 24px 80px #142b2333;
+}
+body:has(dialog[open]) {
+    overflow: hidden;
 }
 dialog::backdrop {
-    background:#142b2366;
-    backdrop-filter:blur(3px);
+    background: #142b2366;
+    backdrop-filter: blur(3px);
 }
 .dialog-heading {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.dialog-heading .eyebrow {
+    margin-bottom: 8px;
+}
+.dialog-heading h2 {
+    font-size: 22px;
+    letter-spacing: -.4px;
 }
 .dialog-heading button {
-    border:0;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    background: #f3f6f3;
+    color: #6c7e73;
 }
-#courier-form>label {
-    display:block;
-    margin:16px 0;
-    font-size:12px;
-    font-weight:600;
+.dialog-description {
+    margin: 0 0 24px;
+    color: #778780;
+    font-size: 13px;
+    line-height: 1.7;
 }
-#courier-form>label>input:not([type=checkbox]),#courier-form>label>select {
-    display:block;
-    width:100%;
-    margin-top:7px;
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 16px;
 }
-.checkbox-label {
-    display:flex!important;
-    align-items:center;
-    gap:8px;
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+.field-wide {
+    grid-column: 1 / -1;
+}
+.form-field input, .form-field select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 9px;
+    font-weight: 400;
+}
+.form-field input:focus, .form-field select:focus {
+    outline: 2px solid #176f5433;
+    outline-offset: 1px;
+    border-color: #176f54;
+}
+.status-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #e2eae3;
+    border-radius: 10px;
+    background: #f7faf7;
+    cursor: pointer;
+}
+.status-field input {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    accent-color: #176f54;
+}
+.status-field strong, .status-field small {
+    display: block;
+}
+.status-field strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+.status-field small {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #778780;
 }
 .dialog-actions {
-    display:flex;
-    justify-content:flex-end;
-    gap:8px;
-    margin-top:24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e8ede9;
 }
-[data-error],#form-error,#delete-error {
-    color:#b4453e;
-    font-size:12px;
+.dialog-actions button {
+    min-height: 44px;
+    min-width: 88px;
+}
+[data-error], #form-error, #delete-error {
+    color: #b4453e;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+[data-error]:empty, #form-error:empty, #delete-error:empty {
+    display: none;
+}
+#form-error:not(:empty), #delete-error:not(:empty) {
+    margin-top: 16px;
 }
 .danger {
-    background:#b94e45;
-    color:white;
-    border-color:#b94e45;
+    background: #b94e45;
+    color: white;
+    border-color: #b94e45;
 }
-#delete-dialog p {
-    font-size:14px;
-    line-height:1.7;
+.delete-explanation {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border: 1px solid #e3e9e4;
+    border-radius: 10px;
+    background: #f6f8f5;
+    color: #718077;
+    font-size: 13px;
+    line-height: 1.7;
 }
-dl {
-    display:grid;
-    grid-template-columns:110px 1fr;
-    gap:15px;
-    font-size:13px;
+#detail-content {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    font-size: 13px;
 }
-dt {
-    color:#7a8b80;
+#detail-content dt, #detail-content dd {
+    margin: 0;
+    padding: 12px 0;
+    border-bottom: 1px solid #edf1ed;
+    line-height: 1.5;
 }
-dd {
-    margin:0;
-    overflow-wrap:anywhere;
+#detail-content dt {
+    color: #7a8b80;
+}
+#detail-content dd {
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+@media (max-width: 480px) {
+    dialog {
+        padding: 22px;
+        border-radius: 16px;
+    }
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+    .form-field input, .form-field select {
+        font-size: 16px;
+    }
+    .dialog-actions button {
+        flex: 1;
+    }
+    #detail-content {
+        grid-template-columns: 90px minmax(0, 1fr);
+    }
 }
 .sr-only {
     position:absolute;
